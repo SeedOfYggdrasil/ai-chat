@@ -18,7 +18,7 @@ const Chat = () => {
     dispatch,
   } = useAPI();
 
-  const models = ["llama3", "codellama", "gemma", "mistral"];
+  const models = ["llama3.1", "codellama", "gemma", "mistral"];
   const chatWindowRef = useRef(null);
 
   useEffect(() => {
@@ -43,9 +43,8 @@ const Chat = () => {
         {state.conversation.map((entry, index) => (
           <div
             key={index}
-            className={`chatMessage ${
-              entry.type === "user" ? "userChat" : "botChat markdown"
-            }`}
+            className={`chatMessage ${entry.type === "user" ? "userChat" : "botChat markdown"
+              }`}
           >
             {entry.type === "user" ? (
               entry.text

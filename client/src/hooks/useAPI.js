@@ -13,9 +13,9 @@ const initialState = {
   conversation: [],
   loading: false,
   typing: "",
-  model: import.meta.env.VITE_AI_MODEL || "llama3",
+  model: import.meta.env.VITE_AI_MODEL || "llama3.1",
   role: import.meta.env.VITE_ROLE || "system",
-  instruction: "Please respond to the following using Markdown syntax.",
+  instruction: " Please respond to the following using Markdown syntax.",
 };
 
 function reducer(state, action) {
@@ -58,9 +58,9 @@ const useAPI = () => {
   const [prompt, setPrompt] = useState("");
 
   const getInstruction = useCallback((model) => {
-    let instruction = "Please format your response using Markdown syntax.";
+    let instruction = " Please format your response using Markdown syntax.";
     switch (model) {
-      case "llama3":
+      case "llama3.1":
         return import.meta.env.VITE_INSTRUCTION_LLAMA3 + instruction;
       case "codellama":
         return import.meta.env.VITE_INSTRUCTION_CODELLAMA + instruction;
@@ -102,7 +102,7 @@ const useAPI = () => {
         })),
       ];
 
-      const request = await axios.post("http://localhost:3001/ai-chat", {
+      const request = await axios.post('/ai-chat', {
         prompt: prompt,
         model: state.model,
         history: history,

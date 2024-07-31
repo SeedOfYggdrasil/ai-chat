@@ -1,11 +1,12 @@
-// server.js
 require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-const OpenAI = require("openai");
 const rateLimit = require("express-rate-limit");
+const axios = require("axios");
+const https = require("https");
+const OpenAI = require('openai');
 
 const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || "localhost";
@@ -13,23 +14,30 @@ const conversation = [];
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 // Middleware
-app.use(cors());
+const corsOptions = {
+  origin: '*',
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
-// Rate Limiter Middleware
+// Rate Limiter
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
 });
 app.use(limiter);
 
-// API Call Using OpenAI
-const ollama = new OpenAI({
-  baseURL: process.env.API_URL,
-  apiKey: process.env.API_KEY,
-  stream: true,
-});
+const apiURL = process.env.API_URL;
+const openai = new OpenAI({
+  baseURL: apiURL,
+  apiKey: 'ollama',
+})
 
 // Chat API
 app.post("/ai-chat", async (req, res) => {
@@ -37,22 +45,32 @@ app.post("/ai-chat", async (req, res) => {
     const { prompt, model, history } = req.body;
     const messages = [...history, { role: "user", content: prompt }];
 
-    const response = await ollama.chat.completions.create({
+    const completion = await openai.chat.completions.create({
       model: model || process.env.MODEL,
       messages: messages,
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
     });
 
-    const messageContent = response.choices[0].message.content;
+    const messageContent = completion.choices[0]?.message?.content;
     conversation.push(messageContent);
+
+    res.setHeader('Content-Type', 'application/json');
     res.status(200).json({ message: messageContent });
+
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Error:", error.completion?.data || error.message);
+
+    res.setHeader('Content-Type', 'application/json');
     res.status(500).json({ error: "Server Error" });
   }
 });
 
 // Conversation History API
-app.get("/ai/chat", (req, res) => {
+app.get("/ai-chat", (req, res) => {
   res.status(200).json({ messages: conversation });
 });
 

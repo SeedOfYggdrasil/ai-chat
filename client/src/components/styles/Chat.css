@@ -71,12 +71,15 @@ html, body {
 }
 
 .chatWindow {
+    display: flex;
+      flex-direction: column;
+
   flex: 1;
   padding: 10px;
   margin: 0 2%;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
+  overflow-x:hidden;
+
   align-items: stretch;
   border: 1px solid rgba(5, 78, 60, 0.292);
   box-shadow: 0 0 1px #0ff3;
