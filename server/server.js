@@ -34,6 +34,7 @@ const limiter = rateLimit({
 app.use(limiter);
 
 const apiURL = process.env.API_URL;
+const apiKEY = process.env.
 const openai = new OpenAI({
   baseURL: apiURL,
   apiKey: 'ollama',
