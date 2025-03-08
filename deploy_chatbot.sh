@@ -29,31 +29,15 @@
 # -------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------
 
-chk_colors() {
-    local file=$HOME/g0dking/files/config/colors.config
-
-    if [[ -z "${red}" ]]; then
-        if [ -e $file ] && [ -f $file ]; then
-            . $file
-        else
-            red='\033[0;31m'
-            green='\033[0;32m'
-            yellow='\033[1;33m'
-            nc='\033[0m'
-        fi
-    fi
-}
-
 _error() {
     local err_msg=$1
-    echo -e "${red}ERROR${nc}: ${yellow}${err_msg}${nc}"    
+    echo -e "${red}ERROR${nc}: ${yellow}${err_msg}${nc}"
+    return 1
 }
 
 ollama_err() {
-    local cmd="${red}curl -fsSL https://ollama.com/install.sh | sh${nc}"
-
     if ! command -v ollama &>/dev/null; then
-        _error "Ollama not found on this system. Please install it by running $cmd, then re-run this script."
+        _error "Ollama not found on this system."
     else
         _error "An unknown error has occurred."
     fi
@@ -64,12 +48,9 @@ chk_if_ollama() {
     local port=$1
     local cmd=$(sudo netstat -tvulnp | grep :$port)
 
-    if [[ -z "$cmd" ]]; then
-        ollama serve || ollama_err
-    else
-        echo -e "${green}Ollama instance is already running!${nc}"
+    if command -v "$cmd" >&/dev/null; then
+        ollama serve || ollama_err && return 1
     fi
-    return 0  
 }
 
 chk_code() {
