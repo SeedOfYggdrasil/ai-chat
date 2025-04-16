@@ -1,7 +1,7 @@
 {
-  "name": "frontend",
+  "name": "chat-client",
   "private": true,
-  "version": "0.3",
+  "version": "4.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

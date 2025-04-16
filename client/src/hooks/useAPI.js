@@ -13,9 +13,9 @@ const initialState = {
   conversation: [],
   loading: false,
   typing: "",
-  model: import.meta.env.VITE_AI_MODEL || "llama3.1",
+  model: import.meta.env.VITE_AI_MODEL || "Gemini",
   role: import.meta.env.VITE_ROLE || "system",
-  instruction: " Please respond to the following using Markdown syntax.",
+  instruction: "Please respond to the following using Markdown syntax.",
 };
 
 function reducer(state, action) {
@@ -60,7 +60,7 @@ const useAPI = () => {
   const getInstruction = useCallback((model) => {
     let instruction = " Please format your response using Markdown syntax.";
     switch (model) {
-      case "llama3.1":
+      case "Gemini":
         return import.meta.env.VITE_INSTRUCTION_LLAMA3 + instruction;
       case "codellama":
         return import.meta.env.VITE_INSTRUCTION_CODELLAMA + instruction;
