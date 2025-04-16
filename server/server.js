@@ -14,7 +14,7 @@ const __dirname = path.dirname(__filename);
 const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || "localhost";
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
-const GEMINI_MODEL_NAME = "gemini-1.5-flash-latest";
+const GEMINI_MODEL_NAME = "gemini-2.0-flash";
 
 // --- Validation ---
 if (!GOOGLE_API_KEY) {
@@ -60,7 +60,7 @@ const generationConfig = {
      maxOutputTokens: 2048,
 };
 
-// Define safety settings
+// Define safety settings (OPTIONAL)
 const safetySettings = [
     { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
     { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
@@ -71,8 +71,8 @@ const safetySettings = [
 // Get the specific model instance
 const model = genAI.getGenerativeModel({
     model: GEMINI_MODEL_NAME,
-    generationConfig,
-    safetySettings
+    generationConfig
+    //safetySettings
 });
 
 // Conversation History
@@ -117,7 +117,7 @@ app.post("/ai-chat", async (req, res) => {  const { prompt, history } = req.body
     console.log(`Calling Gemini with model ${GEMINI_MODEL_NAME}...`);
     const result = await model.generateContent({ contents });
 
-    // --- Process Gemini Response ---
+    // --- Process Gemini Response
     const response = result?.response;
     const candidate = response?.candidates?.[0];
     const blockReason = response?.promptFeedback?.blockReason;
@@ -168,9 +168,7 @@ app.post("/ai-chat", async (req, res) => {  const { prompt, history } = req.body
   }
 });
 
-
-
-// --- Static File Serving ----
+// Serve Client Build
 const clientBuildPath = path.join(__dirname, "..", "client", "dist");
 
 if (fs.existsSync(clientBuildPath)) {
@@ -216,10 +214,9 @@ app.use((err, req, res, next) => {
 
 // --- Start Server ---
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`------------------------------------------------------`);
-  console.log(` Gemini Model: ${GEMINI_MODEL_NAME}`);
-  console.log(` CORS Origin: ${corsOptions.origin}`);
-  console.log(`------------------------------------------------------`);
-  console.log(`DEPLOYED:`);
-  console.log(`  http://${HOST}:${PORT}`);  console.log(`  https://chat.alexpariah.live`);
+  console.log(` AI-CHAT         v.4.0       GEMINI`);
+  console.log(` Deployments:`);
+  console.log(`    -- http://${HOST}:${PORT}`);
+  console.log(`    -- https://chat.alexpariah.live`);
+  console.log(` CONSOLE:`);
 });
