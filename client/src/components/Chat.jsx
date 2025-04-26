@@ -77,9 +77,7 @@ const Chat = () => {
             onKeyDown={submitOnEnter}
             placeholder="Say something..."
           />
-          <button className="submitButton" type="submit">
-            SUBMIT
-          </button>
+            <button className="submitButton" type="submit">SUBMIT</button>
         </form>
       </div>
     </div>

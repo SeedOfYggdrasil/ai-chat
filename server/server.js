@@ -1,4 +1,10 @@
-// --- Imports ---
+// ---------------------
+// ----- SERVER.JS -----
+// ---------------------
+
+// --- INITIALIZATION ---
+
+// Dependencies
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
@@ -8,26 +14,15 @@ import rateLimit from 'express-rate-limit';
 import fs from 'fs';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
-// --- Constants ---
+// Constants
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const PORT = process.env.PORT || 3001;
-const HOST = process.env.HOST || "localhost";
-const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
-const GEMINI_MODEL_NAME = "gemini-2.0-flash";
 
-// --- Validation ---
-if (!GOOGLE_API_KEY) {
-    console.error("FATAL ERROR: GOOGLE_API_KEY environment variable is not set.");
-    process.exit(1);
-}
-
-// --- Express App Initialization ---
+// Express
 const app = express();
 app.set('trust proxy', 1)
 
-// --- Middleware ---
-
+// CORS
 const corsOptions = {
   origin: '*',
   methods: 'GET,POST,OPTIONS',
@@ -37,22 +32,33 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
-// Body Parsing
+// JSON Parsing
 app.use(express.json());
 
 // Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
-  message: 'Too many requests from this IP, please try again after 15 minutes',
+  message: 'Too many requests. Please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
 });
 app.use('/ai-chat', limiter);
 
-// --- Gemini Client Setup ---
-const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY);
+// --- API ---
 
+// Google Gemini
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+const GEMINI_MODEL_NAME = process.env.AI_MODEL || "gemini-2.0-flash";
+
+// Validation
+if (!GOOGLE_API_KEY) {
+    console.error("FATAL: GOOGLE_API_KEY not found in .env");
+    process.exit(1);
+}
+
+// Settings
+const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY);
 const generationConfig = {
      temperature: 0.4,
      topK: 1,
@@ -60,7 +66,7 @@ const generationConfig = {
      maxOutputTokens: 2048,
 };
 
-// Define safety settings (OPTIONAL)
+// [ Optional ]
 const safetySettings = [
     { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
     { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
@@ -68,7 +74,7 @@ const safetySettings = [
     { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
 ];
 
-// Get the specific model instance
+// Gemini Model Instance
 const model = genAI.getGenerativeModel({
     model: GEMINI_MODEL_NAME,
     generationConfig
@@ -96,35 +102,33 @@ function formatHistoryForGemini(history = []) {
     .filter(msg => msg !== null);
 }
 
-// --- API Routes ---
 // Chat Endpoint (POST) - Stateless
 app.post("/ai-chat", async (req, res) => {  const { prompt, history } = req.body;
 
-  // --- Input Validation ---
+  // Input Validation
   if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
     return res.status(400).json({ error: "Bad Request: 'prompt' is required and must be a non-empty string." });
   }
   try {
-    console.log(`Received prompt: "${prompt}" with history length: ${history?.length || 0}`);
+    console.log(`Sending prompt: "${prompt}"`);
     const geminiHistory = formatHistoryForGemini(history);
-
     const contents = [
         ...geminiHistory,
         { role: "user", parts: [{ text: prompt.trim() }] }
     ];
 
-    // --- Call Gemini API ---
-    console.log(`Calling Gemini with model ${GEMINI_MODEL_NAME}...`);
+    // Sebd Request
+    console.log(`Awaiting response from ${GEMINI_MODEL_NAME}...`);
     const result = await model.generateContent({ contents });
 
-    // --- Process Gemini Response
+    // Process Response
     const response = result?.response;
     const candidate = response?.candidates?.[0];
     const blockReason = response?.promptFeedback?.blockReason;
     const safetyRatings = candidate?.safetyRatings;
 
     if (blockReason) {
-        console.error(`Gemini request blocked. Reason: ${blockReason}`, { promptFeedback: response.promptFeedback });
+        console.error(`Request blocked. Reason: ${blockReason}`, { promptFeedback: response.promptFeedback });
         return res.status(400).json({
             error: `Request blocked due to safety settings. Reason: ${blockReason}. Please modify your prompt.`,
             details: `Block Reason: ${blockReason}`
@@ -132,7 +136,7 @@ app.post("/ai-chat", async (req, res) => {  const { prompt, history } = req.body
     }
 
     if (!candidate || candidate.finishReason === 'STOP' && (!candidate.content?.parts || candidate.content.parts.length === 0)) {
-        console.error("Gemini response finished but has no content or invalid structure.", { candidate });
+        console.error("Response finished but has no content or invalid structure.", { candidate });
          const finishReason = candidate?.finishReason;
          const finishMessage = candidate?.finishMessage;
          let errorMessage = "Failed to generate a response.";
@@ -144,31 +148,33 @@ app.post("/ai-chat", async (req, res) => {  const { prompt, history } = req.body
     }
 
     if (!candidate.content?.parts?.[0]?.text) {
-         console.error("Gemini response structure unexpected or text part is missing.", { candidate });
+         console.error("Response structure unexpected or text part is missing.", { candidate });
          return res.status(500).json({ error: "Received an unexpected response format from the AI service." });
     }
 
     const messageContent = candidate.content.parts[0].text;
-    console.log(`Gemini response received successfully.`);
+    console.log(`Response received.`);
 
     res.status(200).json({ message: messageContent });
 
   } catch (error) {
-    console.error("--- ERROR in /ai-chat ---");
+    console.error("--- ERROR ---");
     console.error("Timestamp:", new Date().toISOString());
     console.error("Request Body:", req.body);
     console.error("Error Message:", error.message);
     console.error("Error Stack:", error.stack);
     if (error.response?.data) {
-        console.error("Google API Error Details:", error.response.data);
+        console.error("Error Details:", error.response.data);
     }
     console.error("--- END ERROR ---");
 
-    res.status(500).json({ error: `Internal Server Error: Failed to process chat request. ${error.message || ''}`.trim() });
+    res.status(500).json({ error: `Internal Server Error: Failed to process request. ${error.message || ''}`.trim() });
   }
 });
 
-// Serve Client Build
+// --- SERVER ---
+
+// Frontend Client
 const clientBuildPath = path.join(__dirname, "..", "client", "dist");
 
 if (fs.existsSync(clientBuildPath)) {
@@ -197,13 +203,13 @@ if (fs.existsSync(clientBuildPath)) {
     });
 }
 
-// --- Global Error Handler ----
+// Global Error Handler
 app.use((err, req, res, next) => {
-    console.error("--- UNHANDLED ERROR ---");
+    console.error("--- ERROR ---");
     console.error("Timestamp:", new Date().toISOString());
     console.error("Route:", req.method, req.originalUrl);
     console.error("Error:", err);
-    console.error("--- END UNHANDLED ERROR ---");
+    console.error("--- END ERROR ---");
 
     const statusCode = err.status || 500;
     const message = process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message;
@@ -211,12 +217,20 @@ app.use((err, req, res, next) => {
     res.status(statusCode).json({ error: message });
 });
 
+// Serve Application
+const PORT = process.env.PORT || 3001;
+const HOST = process.env.HOST || "localhost";
+const DOMAIN = process.env.DOMAIN || "chat.alexpariah.live";
 
-// --- Start Server ---
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(` AI-CHAT         v.4.0       GEMINI`);
-  console.log(` Deployments:`);
+  console.log(`-------------------------`);
+  console.log(` AI-CHAT (Working Title)`);
+  console.log(` Version 4.0 | "GEMINI"`);
+  console.log(`-------------------------`);
+  console.log(` Server Deployed:`);
   console.log(`    -- http://${HOST}:${PORT}`);
-  console.log(`    -- https://chat.alexpariah.live`);
-  console.log(` CONSOLE:`);
+  console.log(`    -- https://${DOMAIN}`);
+  console.log(``);
+  console.log(`---- CONSOLE LOG ----`);
+  console.log(``);
 });
