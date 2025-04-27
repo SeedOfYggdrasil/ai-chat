@@ -1,12 +1,15 @@
 {
-    "name": "sojourney",
-    "version": "0.3",
-    "author": "G0dKing",
-    "repo": "https://github.com/G0dKing/ai-chat.git",
+    "name": "ai-chat",
+    "version": "4.0.0",
+    "author": "Alex Pariah",
+    "repo": "https://github.com/seedofyggdrasil/ai-chat.git",
+    "domain": "chat.alexpariah.live",
     "scripts": {
+        "build": "cd client && npm run build",
+        "client": "cd client && npm run dev",
         "deploy": "cd client && npm run build && cd ../server && npm run start",
-        "dev": "cd client && npm run dev && cd ../server && npm run start",
         "init": "cd client && npm i && cd ../server && npm i",
-        "reset": "cd client && rm -rf node_module package-lock.json && npm i && npm run build && cd ../server && rm -rf node_modules package=lock.json && npm i && npm run start"
+        "reinit": "cd client && rm -rf node_module package-lock.json && npm i && cd ../server && rm -rf node_modules package=lock.json && npm i",
+        "server": "cd server && npm run start"
     }
 }

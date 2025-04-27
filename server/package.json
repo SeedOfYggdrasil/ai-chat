@@ -1,5 +1,5 @@
 {
-  "name": "chat-server",
+  "name": "ai-chat-server",
   "main": "server.js",
   "version": "4.0",
   "type": "module",
@@ -7,11 +7,11 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.14.1",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
+    "@google/generative-ai": "latest",
+    "cors": "latest",
+    "dotenv": "latest",
     "express": "^4.19.2",
-    "express-rate-limit": "^7.3.1",
+    "express-rate-limit": "latest",
     "path": "latest",
     "fs": "latest",
     "url": "latest"
